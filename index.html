@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pi Catch</title>
+    <style>
+        body { margin: 0; background: #6a1b9a; overflow: hidden; touch-action: none; font-family: sans-serif; }
+        canvas { display: block; background: #4a148c; }
+        #score { position: absolute; top: 20px; left: 20px; color: gold; font-size: 24px; font-weight: bold; pointer-events: none; }
+        #startBtn { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            padding: 20px 40px; font-size: 24px; background: gold; color: #4a148c;
+            border: none; border-radius: 50px; cursor: pointer; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div id="score">SCORE: 0</div>
+    <button id="startBtn">START GAME</button>
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const startBtn = document.getElementById('startBtn');
+        const scoreElement = document.getElementById('score');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let score = 0;
+        let gameActive = false;
+        let basket = { x: canvas.width / 2 - 40, y: canvas.height - 100, w: 80, h: 20 };
+        let coins = [];
+
+        // التحكم باللمس للموبايل
+        window.addEventListener('touchmove', (e) => {
+            if (gameActive) {
+                let touchX = e.touches[0].clientX;
+                basket.x = touchX - basket.w / 2;
+            }
+        }, { passive: false });
+
+        function createCoin() {
+            if (gameActive) {
+                coins.push({ x: Math.random() * (canvas.width - 30), y: -30, speed: 4 + Math.random() * 3 });
+                setTimeout(createCoin, 1000);
+            }
+        }
+
+        function draw() {
+            if (!gameActive) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // رسم السلة
+            ctx.fillStyle = "gold";
+            ctx.shadowBlur = 10; ctx.shadowColor = "black";
+            ctx.fillRect(basket.x, basket.y, basket.w, basket.h);
+            ctx.shadowBlur = 0;
+
+            // رسم وتحريك العملات
+            coins.forEach((coin, i) => {
+                coin.y += coin.speed;
+                ctx.beginPath();
+                ctx.arc(coin.x, coin.y, 15, 0, Math.PI * 2);
+                ctx.fillStyle = "#FFD700";
+                ctx.fill();
+                ctx.fillStyle = "#4a148c";
+                ctx.font = "bold 16px Arial";
+                ctx.fillText("π", coin.x - 5, coin.y + 6);
+
+                // فحص الاصطدام
+                if (coin.y + 15 > basket.y && coin.x > basket.x && coin.x < basket.x + basket.w) {
+                    coins.splice(i, 1);
+                    score += 10;
+                    scoreElement.innerText = "SCORE: " + score;
+                }
+
+                // نهاية اللعبة
+                if (coin.y > canvas.height) {
+                    gameActive = false;
+                    alert("Game Over! Score: " + score);
+                    location.reload();
+                }
+            });
+            requestAnimationFrame(draw);
+        }
+
+        startBtn.onclick = () => {
+            startBtn.style.display = 'none';
+            gameActive = true;
+            createCoin();
+            draw();
+        };
+    </script>
+</body>
+</html>
